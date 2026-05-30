@@ -20,7 +20,10 @@ fn get_launch_dir(state: State<'_, LaunchDir>) -> Option<String> {
 
 #[tauri::command]
 fn get_open_task_manager(state: State<'_, OpenTaskManager>) -> bool {
-    state.0.lock().expect("OpenTaskManager mutex poisoned").take()
+    let mut guard = state.0.lock().expect("OpenTaskManager mutex poisoned");
+    let val = *guard;
+    *guard = false;
+    val
 }
 
 fn parse_launch_args() -> (Option<String>, bool) {
