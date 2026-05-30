@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Task Manager Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f2f8; font-family: 'Inter', sans-serif; padding: 28px 24px; color: #1a2634; }
+        .dashboard { max-width: 1600px; margin: 0 auto; }
+        .header { margin-bottom: 28px; }
+        .header h1 { font-size: 1.85rem; font-weight: 600; background: linear-gradient(135deg, #0b2b3b, #1e5a6f); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-flex; align-items: center; gap: 12px; }
+        .header h1 i { background: none; color: #1e6f5c; font-size: 2rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-top: 20px; }
+        .stat-card { background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border-radius: 28px; padding: 18px 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.7); transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); background: white; box-shadow: 0 18px 30px -12px rgba(0,0,0,0.12); }
+        .stat-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; color: #4b6a7c; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #0f2c38; line-height: 1.2; }
+        .stat-sub { font-size: 0.75rem; color: #5f7f91; margin-top: 8px; }
+        .panel { background: white; border-radius: 28px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02); margin-bottom: 32px; overflow: hidden; }
+        .panel-header { padding: 18px 24px; border-bottom: 1px solid #eef2f6; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: #fefefe; }
+        .panel-header h2 { font-size: 1.35rem; font-weight: 600; display: flex; align-items: center; gap: 10px; color: #1f4e5c; }
+        .badge-count { background: #e7edf3; padding: 4px 10px; border-radius: 40px; font-size: 0.8rem; font-weight: 600; color: #2c6e7e; }
+        .btn-refresh { background: #f0f4f9; border: none; padding: 8px 16px; border-radius: 40px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: 0.2s; color: #2c5a6e; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-refresh:hover { background: #e2e9f0; color: #0b3b48; }
+        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 500px; border-radius: 0 0 28px 28px; scroll-behavior: smooth; }
+        .task-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 700px; }
+        .task-table th { position: sticky; top: 0; background: #f9fbfd; z-index: 10; text-align: left; padding: 16px 20px; font-weight: 600; color: #3b6e82; border-bottom: 1px solid #e4eaf0; }
+        .task-table td { padding: 12px 20px; border-bottom: 1px solid #f0f3f8; vertical-align: middle; }
+        .progress-bar { width: 80px; background: #e3eaf0; border-radius: 20px; height: 6px; overflow: hidden; display: inline-block; margin-left: 8px; }
+        .progress-fill { height: 100%; border-radius: 20px; }
+        .cpu-fill { background: #3b82f6; }
+        .mem-fill { background: #f59e0b; }
+        .value-text { font-family: monospace; font-weight: 500; }
+        .btn-kill { background: #fff5f5; border: 1px solid #ffcdd2; color: #d14545; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-kill:hover { background: #ffdede; border-color: #f5acac; color: #b12b2b; transform: scale(0.96); }
+        .badge-pid { font-family: monospace; background: #eef2fa; padding: 4px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 500; }
+        .footer-note { text-align: center; font-size: 0.7rem; color: #7c9aab; margin-top: 20px; }
+        .search-box { padding: 8px 14px; border: 1px solid #e4eaf0; border-radius: 20px; font-size: 0.8rem; outline: none; width: 200px; }
+        .search-box:focus { border-color: #3b82f6; }
+        @media (max-width: 700px) { body { padding: 16px; } .task-table th, .task-table td { padding: 10px 12px; } .btn-kill { padding: 4px 10px; } }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1><i class="fas fa-tachometer-alt"></i> Task Manager Monitor</h1>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-microchip"></i> System CPU</div><div class="stat-value" id="statCpu">--%</div><div class="stat-sub">total realtime load</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-memory"></i> RAM Used</div><div class="stat-value" id="statRam">-- MB</div><div class="stat-sub" id="ramDetail">--</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-network-wired"></i> Listening Ports</div><div class="stat-value" id="statPorts">--</div><div class="stat-sub">active TCP listeners</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-chart-line"></i> Processes</div><div class="stat-value" id="statProcs">--</div><div class="stat-sub">running executables</div></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-rocket"></i> Running Processes <span class="badge-count" id="procCountBadge">0</span></h2>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <input class="search-box" type="text" id="procSearch" placeholder="Search process...">
+                <button class="btn-refresh" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="task-table" id="processTable">
+                <thead><tr><th>Process</th><th>PID</th><th>User</th><th>CPU %</th><th>RAM %</th><th>Action</th></tr></thead>
+                <tbody id="processTbody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-plug"></i> Listening Ports <span class="badge-count" id="portCountBadge">0</span></h2>
+            <input class="search-box" type="text" id="portSearch" placeholder="Search port...">
+        </div>
+        <div class="table-wrapper">
+            <table class="task-table" id="portTable">
+                <thead><tr><th>Port</th><th>IP Address</th><th>Protocol</th><th>State</th><th>Process</th><th>PID</th></tr></thead>
+                <tbody id="portTbody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="footer-note"><i class="fas fa-info-circle"></i> Real-time system data. Kill sends SIGKILL to process.</div>
+</div>
+
+<script>
+    const { invoke } = window.__TAURI__.core;
+
+    let allProcesses = [];
+    let allPorts = [];
+
+    async function loadProcesses() {
+        try {
+            allProcesses = await invoke('get_system_processes');
+            renderProcesses();
+        } catch (e) {
+            document.getElementById('processTbody').innerHTML =
+                '<tr><td colspan="6" style="text-align:center;color:#d14545;">Error: ' + e + '</td></tr>';
+        }
+    }
+
+    async function loadPorts() {
+        try {
+            allPorts = await invoke('get_listening_ports');
+            renderPorts();
+        } catch (e) {
+            document.getElementById('portTbody').innerHTML =
+                '<tr><td colspan="6" style="text-align:center;color:#d14545;">Error: ' + e + '</td></tr>';
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const stats = await invoke('get_system_stats');
+            document.getElementById('statCpu').textContent = stats.cpu_percent + '%';
+            document.getElementById('statRam').textContent = stats.mem_used_mb + ' MB';
+            document.getElementById('ramDetail').textContent =
+                Math.round(stats.mem_used_mb / stats.mem_total_mb * 100) + '% of ' + stats.mem_total_mb + ' MB';
+            document.getElementById('statPorts').textContent = allPorts.length;
+            document.getElementById('statProcs').textContent = allProcesses.length;
+        } catch (e) {}
+    }
+
+    function renderProcesses() {
+        const search = document.getElementById('procSearch').value.toLowerCase();
+        const filtered = allProcesses.filter(p =>
+            p.name.toLowerCase().includes(search) || String(p.pid).includes(search)
+        );
+
+        const tbody = document.getElementById('processTbody');
+        document.getElementById('procCountBadge').textContent = filtered.length;
+
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No processes found</td></tr>';
+            return;
+        }
+
+        let html = '';
+        for (const p of filtered.slice(0, 100)) {
+            const cpuWidth = Math.min(100, p.cpu);
+            const memWidth = Math.min(100, p.mem);
+            html += '<tr>' +
+                '<td style="font-weight:500;"><i class="fas fa-cog" style="color:#4f8a8b;font-size:0.8rem;"></i> ' + escapeHtml(p.name) + '</td>' +
+                '<td><span class="badge-pid">' + p.pid + '</span></td>' +
+                '<td>' + escapeHtml(p.user) + '</td>' +
+                '<td><div style="display:flex;align-items:center;gap:6px;"><span class="value-text">' + p.cpu.toFixed(1) + '%</span><div class="progress-bar"><div class="progress-fill cpu-fill" style="width:' + cpuWidth + '%;"></div></div></div></td>' +
+                '<td><div style="display:flex;align-items:center;gap:6px;"><span class="value-text">' + p.mem.toFixed(1) + '%</span><div class="progress-bar"><div class="progress-fill mem-fill" style="width:' + memWidth + '%;"></div></div></div></td>' +
+                '<td><button class="btn-kill" onclick="killProc(' + p.pid + ', \'' + escapeHtml(p.name) + '\')"><i class="fas fa-times"></i> Kill</button></td>' +
+                '</tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    function renderPorts() {
+        const search = document.getElementById('portSearch').value.toLowerCase();
+        const filtered = allPorts.filter(p =>
+            String(p.port).includes(search) || p.process_name.toLowerCase().includes(search) || p.ip.includes(search)
+        );
+
+        const tbody = document.getElementById('portTbody');
+        document.getElementById('portCountBadge').textContent = filtered.length;
+
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No listening ports</td></tr>';
+            return;
+        }
+
+        let html = '';
+        for (const p of filtered) {
+            html += '<tr>' +
+                '<td><span class="badge-pid" style="background:#e9f0f5;">' + p.port + '</span></td>' +
+                '<td><code style="background:#f0f4fa;padding:4px 8px;border-radius:20px;">' + escapeHtml(p.ip) + '</code></td>' +
+                '<td>' + p.protocol + '</td>' +
+                '<td>' + p.state + '</td>' +
+                '<td><i class="fas fa-terminal" style="font-size:0.8rem;"></i> ' + escapeHtml(p.process_name) + '</td>' +
+                '<td>' + (p.pid ? '<span class="badge-pid">' + p.pid + '</span>' : '-') + '</td>' +
+                '</tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    async function killProc(pid, name) {
+        if (!confirm('Kill "' + name + '" (PID ' + pid + ')?')) return;
+        try {
+            await invoke('kill_process', { pid: pid });
+            setTimeout(loadAll, 500);
+        } catch (e) {
+            alert('Failed: ' + e);
+        }
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+    }
+
+    async function loadAll() {
+        await Promise.all([loadProcesses(), loadPorts()]);
+        loadStats();
+    }
+
+    document.getElementById('refreshBtn').onclick = loadAll;
+    document.getElementById('procSearch').oninput = renderProcesses;
+    document.getElementById('portSearch').oninput = renderPorts;
+
+    loadAll();
+    setInterval(loadAll, 5000);
+</script>
+</body>
+</html>

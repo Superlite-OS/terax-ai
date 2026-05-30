@@ -1,6 +1,6 @@
 pub mod modules;
 
-use modules::{agent, fs, git, net, pty, secrets, shell, workspace};
+use modules::{agent, fs, git, net, pty, secrets, shell, system, workspace};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_window_state::StateFlags;
@@ -185,6 +185,10 @@ pub fn run() {
             net::lm_ping,
             net::ai_http_request,
             net::ai_http_stream,
+            system::get_system_processes,
+            system::get_listening_ports,
+            system::kill_process,
+            system::get_system_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

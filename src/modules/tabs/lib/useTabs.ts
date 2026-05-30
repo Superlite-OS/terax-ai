@@ -394,6 +394,22 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return id;
   }, []);
 
+  const newTaskManagerTab = useCallback(() => {
+    // Check if task manager tab already exists
+    const existing = tabsRef.current.find((t) => t.kind === "preview" && t.title === "Task Manager");
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    setTabs((t) => [
+      ...t,
+      { id, kind: "preview", title: "Task Manager", url: "/task-manager.html" },
+    ]);
+    setActiveId(id);
+    return id;
+  }, []);
+
   const newMarkdownTab = useCallback((path: string) => {
     let targetId: number | null = null;
     setTabs((curr) => {

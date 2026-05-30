@@ -193,6 +193,7 @@ export default function App() {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
+    newTaskManagerTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -1443,6 +1444,7 @@ export default function App() {
             onNewPreview={() => openPreviewTab("")}
             onNewEditor={() => setNewEditorOpen(true)}
             onNewGitGraph={openGitGraphFromContext}
+            onNewTaskManager={newTaskManagerTab}
             onClose={handleClose}
             onPin={pinTab}
             onToggleSidebar={toggleSidebar}

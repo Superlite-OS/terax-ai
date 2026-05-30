@@ -33,6 +33,7 @@ type Props = {
   onNewPreview: () => void;
   onNewEditor: () => void;
   onNewGitGraph: () => void;
+  onNewTaskManager: () => void;
   onClose: (id: number) => void;
   /** Pin (promote) a preview tab to persistent on double-click. */
   onPin: (id: number) => void;
@@ -48,6 +49,7 @@ export function TabBar({
   onNewPreview,
   onNewEditor,
   onNewGitGraph,
+  onNewTaskManager,
   onClose,
   onPin,
   compact,
@@ -211,6 +213,10 @@ export function TabBar({
             <DropdownMenuItem onSelect={() => onNewGitGraph()}>
               <HugeiconsIcon icon={GitBranchIcon} size={14} strokeWidth={1.75} />
               <span className="flex-1">Git Graph</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onNewTaskManager()}>
+              <HugeiconsIcon icon={Globe02Icon} size={14} strokeWidth={1.75} />
+              <span className="flex-1">Task Manager</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
