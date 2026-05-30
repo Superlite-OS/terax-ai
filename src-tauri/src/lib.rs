@@ -9,13 +9,28 @@ use tauri_plugin_window_state::StateFlags;
 #[derive(Default)]
 struct LaunchDir(Mutex<Option<String>>);
 
+/// Set when --task-manager is passed; drained on first read.
+#[derive(Default)]
+struct OpenTaskManager(Mutex<bool>);
+
 #[tauri::command]
 fn get_launch_dir(state: State<'_, LaunchDir>) -> Option<String> {
     state.0.lock().expect("LaunchDir mutex poisoned").take()
 }
 
-fn parse_launch_dir() -> Option<String> {
+#[tauri::command]
+fn get_open_task_manager(state: State<'_, OpenTaskManager>) -> bool {
+    state.0.lock().expect("OpenTaskManager mutex poisoned").take()
+}
+
+fn parse_launch_args() -> (Option<String>, bool) {
+    let mut launch_dir = None;
+    let mut open_task_manager = false;
     for arg in std::env::args().skip(1) {
+        if arg == "--task-manager" {
+            open_task_manager = true;
+            continue;
+        }
         if arg.starts_with('-') {
             continue;
         }
@@ -23,9 +38,9 @@ fn parse_launch_dir() -> Option<String> {
         if !canon.is_dir() {
             continue;
         }
-        return Some(crate::modules::fs::to_canon(&canon));
+        launch_dir = Some(crate::modules::fs::to_canon(&canon));
     }
-    None
+    (launch_dir, open_task_manager)
 }
 
 #[tauri::command]
@@ -85,7 +100,7 @@ async fn open_settings_window(app: tauri::AppHandle, tab: Option<String>) -> Res
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let cli_dir = parse_launch_dir();
+    let (cli_dir, open_task_manager) = parse_launch_args();
     workspace::init_launch_cwd(cli_dir.as_deref());
 
     tauri::Builder::default()
@@ -122,6 +137,7 @@ pub fn run() {
             registry
         })
         .manage(LaunchDir(Mutex::new(cli_dir)))
+        .manage(OpenTaskManager(Mutex::new(open_task_manager)))
         .invoke_handler(tauri::generate_handler![
             pty::pty_open,
             pty::pty_write,
@@ -175,6 +191,7 @@ pub fn run() {
             workspace::workspace_authorize,
             workspace::workspace_current_dir,
             get_launch_dir,
+            get_open_task_manager,
             open_settings_window,
             agent::agent_enable_claude_hooks,
             agent::agent_claude_hooks_status,

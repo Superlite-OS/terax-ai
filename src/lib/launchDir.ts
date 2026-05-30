@@ -1,14 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
 
-let cached: string | undefined;
+let cachedDir: string | undefined;
+let cachedTaskManager = false;
 
 export async function initLaunchDir(): Promise<void> {
   const dir =
     (await invoke<string | null>("get_launch_dir").catch(() => null)) ??
     (await invoke<string>("workspace_current_dir").catch(() => null));
-  cached = dir ? dir.replace(/\\/g, "/") : undefined;
+  cachedDir = dir ? dir.replace(/\\/g, "/") : undefined;
+  cachedTaskManager = await invoke<boolean>("get_open_task_manager").catch(() => false);
 }
 
 export function getLaunchDir(): string | undefined {
-  return cached;
+  return cachedDir;
+}
+
+export function getOpenTaskManager(): boolean {
+  return cachedTaskManager;
 }

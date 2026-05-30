@@ -46,7 +46,7 @@ import {
   GitHistoryStack,
   type GitHistorySearchHandle,
 } from "@/modules/git-history";
-import { getLaunchDir } from "@/lib/launchDir";
+import { getLaunchDir, getOpenTaskManager } from "@/lib/launchDir";
 import { quoteShellArg } from "@/lib/shellQuote";
 import { useZoom } from "@/lib/useZoom";
 import { FileExplorer, type FileExplorerHandle } from "@/modules/explorer";
@@ -281,6 +281,14 @@ export default function App() {
       }
     }, 200);
   }, []);
+
+  // Open Task Manager tab if --task-manager flag was passed
+  useEffect(() => {
+    if (getOpenTaskManager()) {
+      newTaskManagerTab();
+    }
+  }, [newTaskManagerTab]);
+
   useEffect(() => {
     return () => {
       if (sidebarWidthWriteTimerRef.current) {
